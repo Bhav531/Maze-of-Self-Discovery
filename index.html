@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maze of Self-Discovery</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #121212;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        #maze {
+            display: grid;
+            grid-template-columns: repeat(10, 40px);
+            grid-template-rows: repeat(10, 40px);
+            gap: 1px;
+            margin: 0 auto;
+        }
+        .cell {
+            width: 40px;
+            height: 40px;
+            background-color: #333;
+            border: 1px solid #fff;
+            position: relative; /* For positioning the dot */
+        }
+        .wall {
+            background-color: #444;
+        }
+        .player {
+            background-color: #ffcc00; /* Bright yellow for visibility */
+            border-radius: 50%; /* Make the player a circle */
+        }
+        .checkpoint {
+            width: 20px;
+            height: 20px;
+            background-color: #00cc66; /* Checkpoint color */
+            border-radius: 50%; /* Make the checkpoint a dot */
+            position: absolute; /* Position it within the cell */
+            top: 10px; /* Center the dot vertically */
+            left: 10px; /* Center the dot horizontally */
+        }
+        .path {
+            background-color: #555; /* Highlighted path color */
+        }
+        .door {
+            background-color: #ff4500; /* Door color */
+            border-radius: 5px; /* Rounded edges for the door */
+        }
+        #message {
+            margin-top: 20px;
+            font-size: 1.2em;
+        }
+        #reset-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #ffcc00;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        #reset-button:hover {
+            background-color: #ffd700;
+        }
+        #ending-screen {
+            display: none; /* Hidden by default */
+            background: linear-gradient(135deg, #ff007f, #ffcc00, #00ffcc, #007fff);
+            color: white;
+            padding: 50px;
+            border-radius: 10px;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            z-index: 1000; /* Ensure it appears above everything else */
+        }
+        .ending-message {
+            font-size: 2em;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+<h1>Maze of Self-Discovery</h1>
+<div id="maze"></div>
+<div id="message"></div>
+<button id="reset-button">Reset Maze</button>
+
+<div id="ending-screen">
+    <div class="ending-message">You are a Master of Confidence!</div>
+    <div class="ending-message">You don't fear anyone!</div>
+    <button onclick="resetGame()">Play Again</button>
+</div>
+
+<script>
+    const mazeData = [
+        [0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
+        [1, 0, 1, 1, 1, 1, 0, 1, 1, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+        [0, 1, 1, 1, 0, 1, 1, 1, 1, 1],
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+        [1, 1, 1, 1, 1, 0, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [0, 1, 1, 1, 1, 1, 1, 1, 0, 2] // 2 represents the door
+    ];
+
+    const checkpoints = [
+        { row: 0, col: 1, message: "Believe in yourself!" },
+        { row: 2, col: 8, message: "Resilience is key to success." },
+        { row: 6, col: 5, message: "Self-esteem is important." },
+        { row: 4, col: 0, message: "Keep pushing forward!" },
+        { row: 8, col: 3, message: "You are capable of great things!" },
+    ];
+
+    let playerPosition = { row: 0, col: 0 };
+    const mazeElement = document.getElementById('maze');
+    const messageElement = document.getElementById('message');
+    const endingScreen = document.getElementById('ending-screen');
+
+    function createMaze() {
+        mazeElement.innerHTML = ''; // Clear previous maze
+        for (let row = 0; row < mazeData.length; row++) {
+            for (let col = 0; col < mazeData[row].length; col++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                if (mazeData[row][col] === 1) {
+                    cell.classList.add('wall');
+                } else if (mazeData[row][col] === 2) {
+                    cell.classList.add('door'); // Add door
+                } else {
+                    cell.classList.add('path'); // Highlight valid paths
+                }
+                if (row === playerPosition.row && col === playerPosition.col) {
+                    cell.classList.add('player'); // Add player class here
+                }
+                const checkpoint = checkpoints.find(cp => cp.row === row && cp.col === col);
+                if (checkpoint) {
+                    const dot = document.createElement('div');
+                    dot.className = 'checkpoint'; // Create a dot for the checkpoint
+                    cell.appendChild(dot); // Add the dot to the cell
+                }
+                mazeElement.appendChild(cell);
+            }
+        }
+    }
+
+    function movePlayer(event) {
+        let newRow = playerPosition.row;
+        let newCol = playerPosition.col;
+
+        if (event.key === 'ArrowUp') newRow--;
+        else if (event.key === 'ArrowDown') newRow++;
+        else if (event.key === 'ArrowLeft') newCol--;
+        else if (event.key === 'ArrowRight') newCol++;
+
+        if (isValidMove(newRow, newCol)) {
+            playerPosition = { row: newRow, col: newCol };
+            checkCheckpoint();
+            if (mazeData[newRow][newCol] === 2) {
+                showEndingScreen(); // Show the colorful ending screen
+            }
+            createMaze();
+        }
+    }
+
+    function isValidMove(row, col) {
+        return row >= 0 && row < mazeData.length &&
+               col >= 0 && col < mazeData[row].length &&
+               (mazeData[row][col] === 0 || checkpoints.some(cp => cp.row === row && cp.col === col) || mazeData[row][col] === 2);
+    }
+
+    function checkCheckpoint() {
+        const checkpoint = checkpoints.find(cp => cp.row === playerPosition.row && cp.col === playerPosition.col);
+        if (checkpoint) {
+            messageElement.innerText = checkpoint.message;
+            checkpoints.splice(checkpoints.indexOf(checkpoint), 1); // Remove the checkpoint after reaching it
+        }
+    }
+
+    function showEndingScreen() {
+        endingScreen.style.display = 'block'; // Show the ending screen
+        messageElement.innerText = ''; // Clear the message
+        mazeElement.style.display = 'none'; // Hide the maze
+    }
+
+    function resetGame() {
+        playerPosition = { row: 0, col: 0 };
+        messageElement.innerText = '';
+        endingScreen.style.display = 'none'; // Hide the ending screen
+        mazeElement.style.display = 'grid'; // Show the maze again
+        checkpoints.length = 5; // Reset checkpoints
+        createMaze();
+    }
+
+    document.getElementById('reset-button').onclick = function() {
+        resetGame();
+    };
+
+    document.addEventListener('keydown', movePlayer);
+    createMaze(); // Initial maze creation
+</script>
+
+</body>
+</html>
